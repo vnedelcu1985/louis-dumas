@@ -49,32 +49,45 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
         closeModal: 'Close preview',
       };
 
-  const currentBrochure = lang === 'fr' ? forumBrochureFr : forumBrochure;
+  // Text & UI content always stays consistent with the website's active language (EN or FR)
+  const siteBrochureText = lang === 'fr' ? forumBrochureFr : forumBrochure;
+
+  // PDF file & poster images are strictly tied to the cohort:
+  // English Cohort -> English PDF on both EN & FR site
+  // French Cohort -> French PDF on both EN & FR site
+  const getCohortPdfBrochure = (event) => {
+    if (!event) return siteBrochureText;
+    const isFrenchCohort = event.cohortLang === 'fr' || event.id === 3;
+    return isFrenchCohort ? forumBrochureFr : forumBrochure;
+  };
 
   // Modal state for viewing the 3-page poster carousel & readable content
-  const [activeModalEvent, setActiveModalEvent] = useState(null);
+  const [activeModalEventId, setActiveModalEventId] = useState(null);
   const [activeSlideIndex, setActiveSlideIndex] = useState(0);
-  const [modalLangOverride, setModalLangOverride] = useState(null);
   const touchStartX = useRef(null);
 
-  const modalBrochureLang = modalLangOverride || lang;
-  const modalBrochure = modalBrochureLang === 'fr' ? forumBrochureFr : forumBrochure;
-  const modalSlides = modalBrochure.slides || [];
-  const currentSlide = modalSlides[activeSlideIndex] || modalSlides[0];
+  const activeModalEvent =
+    activeModalEventId !== null
+      ? currentEvents.find((e) => e.id === activeModalEventId) || null
+      : null;
+
+  const modalPdfBrochure = getCohortPdfBrochure(activeModalEvent);
+  const modalTextSlides = siteBrochureText.slides || [];
+  const modalImageSlides = modalPdfBrochure.slides || [];
+  const currentTextSlide = modalTextSlides[activeSlideIndex] || modalTextSlides[0];
 
   const openPosterModal = (event, initialSlide = 0) => {
-    setActiveModalEvent(event);
+    setActiveModalEventId(event.id);
     setActiveSlideIndex(initialSlide);
-    setModalLangOverride(null);
   };
 
   const closePosterModal = () => {
-    setActiveModalEvent(null);
+    setActiveModalEventId(null);
   };
 
   const handleRegister = (event) => {
-    if (activeModalEvent) {
-      setActiveModalEvent(null);
+    if (activeModalEventId !== null) {
+      setActiveModalEventId(null);
     }
     if (typeof onRegisterEvent === 'function') {
       onRegisterEvent(event);
@@ -98,9 +111,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
       if (e.key === 'Escape') {
         closePosterModal();
       } else if (e.key === 'ArrowRight') {
-        setActiveSlideIndex((prev) => (prev + 1) % modalSlides.length);
+        setActiveSlideIndex((prev) => (prev + 1) % modalTextSlides.length);
       } else if (e.key === 'ArrowLeft') {
-        setActiveSlideIndex((prev) => (prev - 1 + modalSlides.length) % modalSlides.length);
+        setActiveSlideIndex((prev) => (prev - 1 + modalTextSlides.length) % modalTextSlides.length);
       }
     };
 
@@ -109,7 +122,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeModalEvent, modalSlides.length]);
+  }, [activeModalEvent, modalTextSlides.length]);
 
   const handleModalTouchStart = (e) => {
     if (e.touches && e.touches.length > 0) {
@@ -121,9 +134,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
     if (touchStartX.current === null || !e.changedTouches || e.changedTouches.length === 0) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (diff > 40) {
-      setActiveSlideIndex((prev) => (prev + 1) % modalSlides.length);
+      setActiveSlideIndex((prev) => (prev + 1) % modalTextSlides.length);
     } else if (diff < -40) {
-      setActiveSlideIndex((prev) => (prev - 1 + modalSlides.length) % modalSlides.length);
+      setActiveSlideIndex((prev) => (prev - 1 + modalTextSlides.length) % modalTextSlides.length);
     }
     touchStartX.current = null;
   };
@@ -397,6 +410,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
 
               <div>
                 {filteredEvents.map((event, idx) => {
+                  // Cohort-specific PDF & Poster (English PDF for English Cohort, French PDF for French Cohort)
+                  const eventPdfBrochure = getCohortPdfBrochure(event);
+
                   return (
                     <React.Fragment key={event.id}>
                       {/* Divider line begins where the content begins */}
@@ -410,137 +426,97 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                         onClick={() => openPosterModal(event, 0)}
                         className="group cursor-pointer py-8 pl-11 sm:pl-12 relative transition-colors duration-500"
                       >
-                        {/* Circular Hollow Node Marker on Timeline */}
-                        <div
-                          className="absolute left-[18px] top-11 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#0C1B26] border-2 border-[#9D2933] shadow-[0_0_8px_rgba(157,41,51,0.4)] group-hover:border-[#B48B44] group-hover:shadow-[0_0_12px_rgba(180,139,68,0.7)] group-hover:scale-125 transition-all duration-300 pointer-events-none"
-                          aria-hidden="true"
-                        />
+                        {/* Top Date & Location Row + Website-Consistent Action Buttons */}
+                        <div className="flex flex-col md:flex-row justify-between md:items-center mb-5 gap-3">
+                          <div className="text-sm tracking-widest text-[#B48B44] uppercase relative flex items-center">
+                            {/* Circular Hollow Node Marker on Timeline */}
+                            <div
+                              className="absolute -left-[26px] sm:-left-[30px] top-1/2 -translate-x-1/2 -translate-y-1/2 w-4 h-4 rounded-full bg-[#0C1B26] border-2 border-[#9D2933] shadow-[0_0_8px_rgba(157,41,51,0.4)] group-hover:border-[#B48B44] group-hover:shadow-[0_0_12px_rgba(180,139,68,0.7)] group-hover:scale-125 transition-all duration-300 pointer-events-none"
+                              aria-hidden="true"
+                            />
+                            <span>
+                              {event.dateDisplay ||
+                                `${monthNames[event.date.getMonth()].substring(0, 3)} ${event.date.getDate()}`}{' '}
+                              — {event.city}
+                            </span>
+                          </div>
 
-                        {/* Event Layout: Poster Thumbnail + Structured Event Details */}
-                        <div className="flex flex-col sm:flex-row gap-6 md:gap-7 items-start">
-                          {/* Poster Thumbnail Preview */}
+                          <div className="flex flex-wrap items-center gap-2.5">
+                            <span className="text-xs uppercase tracking-widest border border-[#FBFAF5]/20 px-3 py-1 group-hover:border-[#B48B44] transition-colors duration-500 inline-block w-max rounded-sm text-[#FBFAF5]/80">
+                              {event.type}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleRegister(event);
+                              }}
+                              className="group/btn inline-flex items-center gap-1.5 px-3 py-1 text-xs uppercase tracking-widest bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] font-medium rounded-sm transition-all duration-300 cursor-pointer shadow-sm hover:shadow"
+                              aria-label={`${i18n.registerButton || 'Register'} — ${event.title}`}
+                            >
+                              <span>{i18n.registerButton || (lang === 'fr' ? "S'inscrire" : 'Register')}</span>
+                              <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">→</span>
+                            </button>
+                          </div>
+                        </div>
+
+                        {/* Event Body: Cohort Poster Thumbnail + Website Event Text & Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-6 items-start">
+                          {/* Poster Thumbnail Preview (Matches Cohort Language: EN PDF for English Cohort, FR PDF for French Cohort) */}
                           <button
                             type="button"
                             onClick={(e) => {
                               e.stopPropagation();
                               openPosterModal(event, 0);
                             }}
-                            className="group/thumb relative w-40 sm:w-36 md:w-44 aspect-[1080/1350] rounded-lg overflow-hidden border border-[#B48B44]/35 group-hover:border-[#B48B44] shadow-[0_14px_34px_rgba(0,0,0,0.5)] shrink-0 bg-[#18070B] text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B48B44]"
+                            className="group/thumb relative w-36 sm:w-32 md:w-36 aspect-[1080/1350] rounded-sm overflow-hidden border border-[#B48B44]/35 group-hover:border-[#B48B44] shadow-[0_14px_34px_rgba(0,0,0,0.5)] shrink-0 bg-[#18070B] text-left cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#B48B44]"
                             aria-label={`${i18n.viewPoster} — ${event.title}`}
                           >
                             <img
-                              src={currentBrochure.thumbnailUrl}
+                              src={eventPdfBrochure.thumbnailUrl}
                               alt={`${event.title} — ${i18n.viewPoster}`}
                               className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover/thumb:scale-105"
                               loading="lazy"
                             />
-                            {/* Subtle gradient vignette at bottom for badge legibility */}
-                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/15 to-transparent opacity-90 group-hover/thumb:opacity-75 transition-opacity duration-300" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/15 to-transparent opacity-90 group-hover/thumb:opacity-75 transition-opacity duration-300" />
 
-                            {/* Top-right 3-page PDF indicator */}
-                            <span className="absolute top-2.5 right-2.5 px-2 py-0.5 rounded bg-[#0C1B26]/85 backdrop-blur-sm border border-[#FBFAF5]/20 text-[0.58rem] font-mono uppercase tracking-wider text-[#FBFAF5]/90">
-                              3 {lang === 'fr' ? 'pages' : 'pages'}
-                            </span>
-
-                            {/* Bottom-left "View the poster" pill (matches reference screenshot) */}
-                            <span className="absolute bottom-2.5 left-2.5 right-2.5 inline-flex items-center justify-center gap-1.5 px-3 py-1.5 rounded-full bg-[#0C1B26]/90 group-hover/thumb:bg-[#B48B44] text-[#FBFAF5] group-hover/thumb:text-[#0C1B26] border border-[#FBFAF5]/25 group-hover/thumb:border-[#B48B44] text-[0.65rem] font-medium tracking-wider uppercase transition-all duration-300 shadow-md">
+                            <span className="absolute bottom-2 left-2 right-2 inline-flex items-center justify-center gap-1.5 px-2.5 py-1 rounded-sm bg-[#0C1B26]/90 group-hover/thumb:bg-[#B48B44] text-[#FBFAF5] group-hover/thumb:text-[#0C1B26] border border-[#FBFAF5]/25 group-hover/thumb:border-[#B48B44] text-[0.6rem] font-medium tracking-widest uppercase transition-all duration-300 shadow-md">
                               <FileText className="w-3 h-3 shrink-0" />
                               <span>{i18n.viewPoster}</span>
                             </span>
                           </button>
 
-                          {/* Event Details Column */}
+                          {/* Event Copy & Actions (Matches Website Language & Button Styling) */}
                           <div className="flex-1 min-w-0">
-                            {/* Eyebrow Badges */}
-                            <div className="flex flex-wrap items-center gap-2 mb-2.5">
-                              <span className="text-[0.68rem] uppercase tracking-[0.22em] text-[#B48B44] font-mono font-medium">
-                                {event.type}
-                              </span>
-                              <span className="text-[#FBFAF5]/25">•</span>
-                              <span className="text-[0.65rem] uppercase tracking-widest px-2.5 py-0.5 rounded-full bg-[#9D2933]/35 border border-[#9D2933]/70 text-[#FBFAF5]/90 font-medium">
-                                {event.badge}
-                              </span>
-                            </div>
-
-                            {/* Event Title */}
-                            <h3 className="text-2xl md:text-3xl font-serif text-[#FBFAF5] group-hover:text-[#B48B44] transition-colors duration-300 leading-snug mb-1.5">
+                            <h3 className="text-2xl md:text-3xl font-serif mb-2 text-[#FBFAF5] group-hover:text-[#B48B44] transition-colors duration-500">
                               {event.title}
                             </h3>
-
-                            {/* Event Subtitle */}
-                            {event.subtitle && (
-                              <p className="text-sm md:text-base text-[#FBFAF5]/75 font-light italic mb-4">
-                                {event.subtitle}
-                              </p>
-                            )}
-
-                            {/* Compact 3-Column Metadata Strip: When / Where / Seats */}
-                            <div className="grid grid-cols-3 gap-3 sm:gap-5 py-3 px-4 mb-4 rounded-lg bg-[#0F2231]/75 border border-[#FBFAF5]/10">
-                              <div>
-                                <div className="text-[0.62rem] uppercase tracking-widest text-[#FBFAF5]/45 font-mono mb-0.5">
-                                  {i18n.whenLabel}
-                                </div>
-                                <div className="text-xs sm:text-sm font-medium text-[#FBFAF5]">
-                                  {event.dateDisplay}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-[0.62rem] uppercase tracking-widest text-[#FBFAF5]/45 font-mono mb-0.5">
-                                  {i18n.whereLabel}
-                                </div>
-                                <div className="text-xs sm:text-sm font-medium text-[#FBFAF5]">
-                                  {event.venue || currentBrochure.venue}
-                                </div>
-                              </div>
-                              <div>
-                                <div className="text-[0.62rem] uppercase tracking-widest text-[#FBFAF5]/45 font-mono mb-0.5">
-                                  {i18n.seatsLabel}
-                                </div>
-                                <div className="text-xs sm:text-sm font-medium text-[#FBFAF5]">
-                                  {event.seats || currentBrochure.seats}
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Description */}
-                            <p className="text-sm md:text-base font-light text-[#FBFAF5]/75 leading-relaxed mb-5">
+                            <p className="text-base font-light text-[#FBFAF5]/70 leading-relaxed mb-3">
+                              {event.summary}
+                            </p>
+                            <p className="text-sm md:text-base font-light text-[#FBFAF5]/85 leading-relaxed mb-5">
                               {event.description}
                             </p>
 
-                            {/* Action Row: Register + View the Poster + Download the PDF */}
-                            <div className="pt-4 border-t border-[#FBFAF5]/10 flex flex-wrap items-center gap-3 sm:gap-4">
-                              {/* Primary Register Button -> scrolls to form & pre-fills */}
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  handleRegister(event);
-                                }}
-                                className="group/btn inline-flex items-center gap-1.5 px-4 py-2 text-xs uppercase tracking-widest bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] font-medium rounded-full transition-all duration-300 cursor-pointer shadow-sm hover:shadow-md"
-                                aria-label={`${i18n.registerButton || 'Register'} — ${event.title}`}
-                              >
-                                <span>{i18n.registerButton || (lang === 'fr' ? "S'inscrire" : 'Register')}</span>
-                                <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">→</span>
-                              </button>
-
-                              {/* Secondary View the Poster Button -> opens carousel modal */}
+                            {/* Action Buttons Consistent with Website Design (rounded-sm, uppercase tracking-widest) */}
+                            <div className="pt-4 border-t border-[#FBFAF5]/10 flex flex-wrap items-center gap-3">
                               <button
                                 type="button"
                                 onClick={(e) => {
                                   e.stopPropagation();
                                   openPosterModal(event, 0);
                                 }}
-                                className="inline-flex items-center gap-1.5 px-4 py-2 text-xs uppercase tracking-widest rounded-full border border-[#FBFAF5]/25 hover:border-[#B48B44] text-[#FBFAF5]/90 hover:text-[#B48B44] bg-[#FBFAF5]/[0.03] hover:bg-[#B48B44]/10 transition-all duration-300 cursor-pointer"
+                                className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs uppercase tracking-widest border border-[#FBFAF5]/25 hover:border-[#B48B44] text-[#FBFAF5]/90 hover:text-[#B48B44] rounded-sm transition-all duration-300 cursor-pointer"
                               >
+                                <FileText className="w-3.5 h-3.5" />
                                 <span>{i18n.viewPoster}</span>
                               </button>
 
-                              {/* Tertiary Download the PDF Link */}
                               <a
-                                href={currentBrochure.pdfUrl}
-                                download={currentBrochure.pdfFileName}
+                                href={eventPdfBrochure.pdfUrl}
+                                download={eventPdfBrochure.pdfFileName}
                                 onClick={(e) => e.stopPropagation()}
-                                className="inline-flex items-center gap-1.5 text-xs uppercase tracking-widest text-[#B48B44] hover:text-[#FBFAF5] underline underline-offset-4 decoration-[#B48B44]/60 hover:decoration-[#FBFAF5] transition-colors py-1"
+                                className="inline-flex items-center gap-2 px-3.5 py-1.5 text-xs uppercase tracking-widest border border-[#FBFAF5]/25 hover:border-[#B48B44] text-[#B48B44] hover:text-[#FBFAF5] rounded-sm transition-all duration-300"
                               >
                                 <Download className="w-3.5 h-3.5" />
                                 <span>{i18n.downloadPdf}</span>
@@ -576,55 +552,26 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
             aria-label={activeModalEvent.title}
           >
             <div
-              className="relative w-full max-w-6xl bg-gradient-to-b from-[#0F2231] to-[#0A1620] border border-[#B48B44]/40 rounded-2xl shadow-[0_30px_90px_rgba(0,0,0,0.75)] text-[#FBFAF5] overflow-hidden my-auto lg:h-[720px] max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-6xl bg-gradient-to-b from-[#0F2231] to-[#0A1620] border border-[#B48B44]/40 rounded-sm shadow-[0_30px_90px_rgba(0,0,0,0.75)] text-[#FBFAF5] overflow-hidden my-auto lg:h-[720px] max-h-[92vh] flex flex-col"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Top Header Bar */}
+              {/* Modal Top Header Bar (Text & Buttons match website language & rounded-sm styling) */}
               <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-[#FBFAF5]/10 bg-[#0A1620]/90 shrink-0">
                 <div className="min-w-0">
                   <div className="text-[0.62rem] tracking-[0.28em] uppercase text-[#B48B44] font-mono">
-                    {modalBrochure.eyebrow} · {modalBrochure.subEyebrow}
+                    {siteBrochureText.eyebrow} · {siteBrochureText.subEyebrow}
                   </div>
                   <h4 className="text-base sm:text-lg font-serif text-[#FBFAF5] truncate">
                     {activeModalEvent.title}
                   </h4>
                 </div>
 
-                <div className="flex items-center gap-2 sm:gap-3">
-                  {/* Brochure Language Toggle (EN / FR) */}
-                  <div
-                    className="inline-flex items-center rounded-full border border-[#FBFAF5]/15 bg-[#0C1B26] p-0.5 text-[0.65rem] font-mono uppercase"
-                    aria-label="Brochure language"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => setModalLangOverride('en')}
-                      className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
-                        modalBrochureLang === 'en'
-                          ? 'bg-[#B48B44] text-[#0C1B26] font-semibold'
-                          : 'text-[#FBFAF5]/60 hover:text-[#FBFAF5]'
-                      }`}
-                    >
-                      EN
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => setModalLangOverride('fr')}
-                      className={`px-2.5 py-1 rounded-full transition-colors cursor-pointer ${
-                        modalBrochureLang === 'fr'
-                          ? 'bg-[#B48B44] text-[#0C1B26] font-semibold'
-                          : 'text-[#FBFAF5]/60 hover:text-[#FBFAF5]'
-                      }`}
-                    >
-                      FR
-                    </button>
-                  </div>
-
-                  {/* Download PDF button */}
+                <div className="flex items-center gap-2.5">
+                  {/* Download PDF button (Downloads English PDF for English Cohort, French PDF for French Cohort) */}
                   <a
-                    href={modalBrochure.pdfUrl}
-                    download={modalBrochure.pdfFileName}
-                    className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[0.68rem] sm:text-xs uppercase tracking-wider text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
+                    href={modalPdfBrochure.pdfUrl}
+                    download={modalPdfBrochure.pdfFileName}
+                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm border border-[#FBFAF5]/20 hover:border-[#B48B44] text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
                     <span className="hidden sm:inline">{i18n.downloadPdf}</span>
@@ -635,17 +582,17 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                   <button
                     type="button"
                     onClick={() => handleRegister(activeModalEvent)}
-                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-[0.68rem] sm:text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
+                    className="group/btn inline-flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
                   >
                     <span>{i18n.registerButton}</span>
-                    <span>→</span>
+                    <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">→</span>
                   </button>
 
                   {/* Close Button */}
                   <button
                     type="button"
                     onClick={closePosterModal}
-                    className="w-8 h-8 rounded-full border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[#FBFAF5]/70 hover:text-[#FBFAF5] flex items-center justify-center transition-colors cursor-pointer"
+                    className="w-8 h-8 rounded-sm border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[#FBFAF5]/70 hover:text-[#FBFAF5] flex items-center justify-center transition-colors cursor-pointer"
                     aria-label={i18n.closeModal}
                   >
                     <X className="w-4 h-4" />
@@ -653,9 +600,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                 </div>
               </div>
 
-              {/* Modal Body: Split Left Poster Carousel + Right Readable Content (Fixed uniform dimensions) */}
+              {/* Modal Body: Split Left Cohort Poster Carousel + Right Website-Language Readable Content */}
               <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
-                {/* Left Column: Interactive 3-Slide Poster Visual Carousel */}
+                {/* Left Column: Interactive 3-Slide Poster Visual Carousel (Cohort-matched PDF slides) */}
                 <div
                   className="lg:col-span-6 lg:h-full bg-[#071018] p-4 sm:p-6 flex flex-col items-center justify-between border-b lg:border-b-0 lg:border-r border-[#FBFAF5]/10 select-none lg:overflow-hidden"
                   onTouchStart={handleModalTouchStart}
@@ -668,7 +615,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                       type="button"
                       onClick={() =>
                         setActiveSlideIndex(
-                          (prev) => (prev - 1 + modalSlides.length) % modalSlides.length
+                          (prev) => (prev - 1 + modalImageSlides.length) % modalImageSlides.length
                         )
                       }
                       className="absolute left-1 sm:left-2 z-10 w-10 h-10 rounded-full bg-[#0C1B26]/85 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/25 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-lg"
@@ -677,13 +624,13 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                       <ChevronLeft className="w-5 h-5" />
                     </button>
 
-                    {/* Fixed-size Poster Viewport with stacked preloaded slides so dimensions never shift */}
-                    <div className="relative h-[360px] sm:h-[460px] lg:h-[510px] aspect-[1080/1350] rounded-lg overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.65)] bg-[#2A0B12] shrink-0">
-                      {modalSlides.map((slide, idx) => (
+                    {/* Fixed-size Poster Viewport with stacked preloaded cohort slides */}
+                    <div className="relative h-[360px] sm:h-[460px] lg:h-[510px] aspect-[1080/1350] rounded-sm overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.65)] bg-[#2A0B12] shrink-0">
+                      {modalImageSlides.map((slide, idx) => (
                         <img
                           key={slide.imageUrl}
                           src={slide.imageUrl}
-                          alt={`${modalBrochure.eyebrow} — ${slide.pillar}`}
+                          alt={`${activeModalEvent.title} — ${slide.pillar}`}
                           className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
                             activeSlideIndex === idx
                               ? 'opacity-100 z-[2]'
@@ -697,7 +644,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                     <button
                       type="button"
                       onClick={() =>
-                        setActiveSlideIndex((prev) => (prev + 1) % modalSlides.length)
+                        setActiveSlideIndex((prev) => (prev + 1) % modalImageSlides.length)
                       }
                       className="absolute right-1 sm:right-2 z-10 w-10 h-10 rounded-full bg-[#0C1B26]/85 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/25 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-lg"
                       aria-label="Next page"
@@ -706,18 +653,18 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                     </button>
                   </div>
 
-                  {/* Poster Carousel Footer: Page Pills + Open Full PDF in New Tab */}
+                  {/* Poster Carousel Footer: Website-Language Page Buttons + Open Full PDF in New Tab */}
                   <div className="w-full pt-3 mt-2 border-t border-[#FBFAF5]/10 flex flex-wrap items-center justify-between gap-2 shrink-0">
                     <div className="flex items-center gap-1.5">
-                      {modalSlides.map((slide, idx) => (
+                      {modalTextSlides.map((slide, idx) => (
                         <button
                           key={slide.page}
                           type="button"
                           onClick={() => setActiveSlideIndex(idx)}
-                          className={`px-2.5 sm:px-3 py-1 rounded-full text-[0.62rem] sm:text-[0.65rem] font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                          className={`px-2.5 sm:px-3 py-1 rounded-sm text-[0.62rem] sm:text-[0.65rem] font-mono uppercase tracking-wider transition-all cursor-pointer ${
                             activeSlideIndex === idx
                               ? 'bg-[#B48B44] text-[#0C1B26] font-semibold shadow-sm'
-                              : 'bg-[#FBFAF5]/5 text-[#FBFAF5]/65 hover:bg-[#FBFAF5]/15 hover:text-[#FBFAF5]'
+                              : 'bg-[#FBFAF5]/5 text-[#FBFAF5]/65 border border-[#FBFAF5]/15 hover:border-[#B48B44] hover:text-[#FBFAF5]'
                           }`}
                         >
                           {slide.numeral} · {slide.pillar}
@@ -726,7 +673,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                     </div>
 
                     <a
-                      href={modalBrochure.pdfUrl}
+                      href={modalPdfBrochure.pdfUrl}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="inline-flex items-center gap-1 text-[0.68rem] font-mono uppercase tracking-wider text-[#B48B44] hover:text-[#FBFAF5] transition-colors"
@@ -737,21 +684,21 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                   </div>
                 </div>
 
-                {/* Right Column: Synchronized Readable Content & Event Registration (Locked height) */}
+                {/* Right Column: Synchronized Readable Content & Event Registration (Matches Website Language & Styling) */}
                 <div className="lg:col-span-6 lg:h-full p-5 sm:p-7 flex flex-col justify-between bg-gradient-to-b from-[#0F2231] to-[#0B1822] lg:overflow-hidden">
                   {/* Pinned Top: Slide Selector Tabs */}
                   <div className="flex items-center border-b border-[#FBFAF5]/10 pb-3 mb-4 gap-2 overflow-x-auto shrink-0">
-                    {modalSlides.map((slide, idx) => {
+                    {modalTextSlides.map((slide, idx) => {
                       const isActive = activeSlideIndex === idx;
                       return (
                         <button
                           key={slide.page}
                           type="button"
                           onClick={() => setActiveSlideIndex(idx)}
-                          className={`flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs uppercase tracking-widest font-mono transition-all cursor-pointer shrink-0 ${
+                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-sm text-xs uppercase tracking-widest font-mono transition-all cursor-pointer shrink-0 ${
                             isActive
                               ? 'bg-[#9D2933]/35 border border-[#B48B44] text-[#FBFAF5]'
-                              : 'text-[#FBFAF5]/50 hover:text-[#FBFAF5] hover:bg-[#FBFAF5]/5 border border-transparent'
+                              : 'text-[#FBFAF5]/50 hover:text-[#FBFAF5] hover:bg-[#FBFAF5]/5 border border-[#FBFAF5]/10'
                           }`}
                         >
                           <span className="text-[#B48B44]">{slide.numeral}</span>
@@ -763,52 +710,52 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
 
                   {/* Fixed-Height Middle Content Region so switching slides never resizes the modal */}
                   <div className="h-[340px] sm:h-[360px] lg:h-auto lg:flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(180,139,68,0.35)_transparent]">
-                    {currentSlide && (
+                    {currentTextSlide && (
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.25em] text-[#B48B44]">
                             <span>
-                              {i18n.pageLabel} {currentSlide.numeral} / 03
+                              {i18n.pageLabel} {currentTextSlide.numeral} / 03
                             </span>
                             <span>—</span>
-                            <span>{currentSlide.pillar}</span>
+                            <span>{currentTextSlide.pillar}</span>
                           </div>
-                          {currentSlide.kicker && (
+                          {currentTextSlide.kicker && (
                             <span className="text-[0.65rem] font-mono uppercase tracking-[0.22em] text-[#FBFAF5]/55">
-                              {currentSlide.kicker}
+                              {currentTextSlide.kicker}
                             </span>
                           )}
                         </div>
 
                         <h3 className="text-2xl sm:text-3xl font-serif text-[#FBFAF5] leading-tight">
-                          {currentSlide.headline}
+                          {currentTextSlide.headline}
                         </h3>
 
-                        {currentSlide.subhead && (
+                        {currentTextSlide.subhead && (
                           <div className="pl-3.5 border-l-2 border-[#B48B44] text-sm sm:text-base text-[#FBFAF5]/90 font-normal leading-snug">
-                            {currentSlide.subhead}
+                            {currentTextSlide.subhead}
                           </div>
                         )}
 
-                        {currentSlide.quote && (
+                        {currentTextSlide.quote && (
                           <blockquote className="pl-3.5 border-l-2 border-[#B48B44] text-base sm:text-lg font-serif italic text-[#B48B44] leading-snug">
-                            {currentSlide.quote}
+                            {currentTextSlide.quote}
                           </blockquote>
                         )}
 
-                        {currentSlide.body && (
+                        {currentTextSlide.body && (
                           <p className="text-sm sm:text-base text-[#FBFAF5]/80 font-light leading-relaxed">
-                            {currentSlide.body}
+                            {currentTextSlide.body}
                           </p>
                         )}
 
                         {/* Slide 2 Numbered Steps */}
-                        {currentSlide.steps && (
+                        {currentTextSlide.steps && (
                           <div className="space-y-2.5 pt-1">
-                            {currentSlide.steps.map((step) => (
+                            {currentTextSlide.steps.map((step) => (
                               <div
                                 key={step.number}
-                                className="flex items-start gap-3.5 p-3 rounded-lg bg-[#0A1620]/70 border border-[#FBFAF5]/10"
+                                className="flex items-start gap-3.5 p-3 rounded-sm bg-[#0A1620]/70 border border-[#FBFAF5]/10"
                               >
                                 <span className="text-xs font-mono font-semibold text-[#B48B44] mt-0.5">
                                   {step.number}
@@ -822,12 +769,12 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                         )}
 
                         {/* Slide 3 Sections (Why Louis / In The Room / Who It's For) */}
-                        {currentSlide.sections && (
+                        {currentTextSlide.sections && (
                           <div className="space-y-2.5 pt-1">
-                            {currentSlide.sections.map((sec) => (
+                            {currentTextSlide.sections.map((sec) => (
                               <div
                                 key={sec.label}
-                                className="p-2.5 sm:p-3 rounded-lg bg-[#0A1620]/70 border border-[#FBFAF5]/10"
+                                className="p-2.5 sm:p-3 rounded-sm bg-[#0A1620]/70 border border-[#FBFAF5]/10"
                               >
                                 <div className="text-[0.62rem] font-mono uppercase tracking-[0.22em] text-[#B48B44] mb-0.5">
                                   {sec.label}
@@ -843,9 +790,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                     )}
                   </div>
 
-                  {/* Pinned Bottom: Event Cohort Summary + Register & Download CTAs */}
+                  {/* Pinned Bottom: Event Cohort Summary + Website-Consistent Register & Download CTAs */}
                   <div className="pt-4 mt-4 border-t border-[#FBFAF5]/10 shrink-0 space-y-4">
-                    <div className="p-3.5 rounded-xl bg-[#0A1620]/90 border border-[#B48B44]/25">
+                    <div className="p-3.5 rounded-sm bg-[#0A1620]/90 border border-[#FBFAF5]/10 border-l-2 border-l-[#9D2933]">
                       <div className="grid grid-cols-3 gap-3 text-xs">
                         <div>
                           <span className="block text-[0.58rem] font-mono uppercase tracking-widest text-[#FBFAF5]/45">
@@ -860,7 +807,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                             {i18n.whereLabel}
                           </span>
                           <span className="font-medium text-[#FBFAF5]">
-                            {modalBrochure.venue}
+                            {siteBrochureText.venue}
                           </span>
                         </div>
                         <div>
@@ -868,7 +815,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                             {i18n.seatsLabel}
                           </span>
                           <span className="font-medium text-[#FBFAF5]">
-                            {modalBrochure.seatsDetail}
+                            {siteBrochureText.seatsDetail}
                           </span>
                         </div>
                       </div>
@@ -878,7 +825,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                       <button
                         type="button"
                         onClick={() => handleRegister(activeModalEvent)}
-                        className="group/btn inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-full bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-semibold transition-all duration-300 cursor-pointer shadow-lg"
+                        className="group/btn inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-medium transition-all duration-300 cursor-pointer shadow-md"
                       >
                         <span>{i18n.registerForEvent}</span>
                         <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">
@@ -887,9 +834,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                       </button>
 
                       <a
-                        href={modalBrochure.pdfUrl}
-                        download={modalBrochure.pdfFileName}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full border border-[#FBFAF5]/25 hover:border-[#B48B44] text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
+                        href={modalPdfBrochure.pdfUrl}
+                        download={modalPdfBrochure.pdfFileName}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-sm border border-[#FBFAF5]/25 hover:border-[#B48B44] text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
                       >
                         <Download className="w-3.5 h-3.5" />
                         <span>{i18n.downloadPdf}</span>
