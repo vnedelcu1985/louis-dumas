@@ -26,7 +26,7 @@ jobs:
       - name: Build production bundle
         run: |
           npm run build
-          # Also keep backwards-compatible copies for any cached HTML referencing index-CUtWghPl
+          # Keep backwards-compatible copies for any cached HTML referencing index-CUtWghPl
           JS_FILE=$(ls dist/assets/index-*.js | head -n 1)
           CSS_FILE=$(ls dist/assets/index-*.css | head -n 1)
           if [ -n "$JS_FILE" ] && [ "$JS_FILE" != "dist/assets/index-CUtWghPl.js" ]; then
@@ -54,10 +54,15 @@ jobs:
           rsync -avz \
             -e "ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             dist/ "${SG_USER}@${SG_HOST}:${TARGET_PATH}"
-          # Flush SiteGround NGINX Dynamic Cache automatically
+          # Flush SiteGround NGINX Dynamic Cache automatically from inside the server
           ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SG_USER}@${SG_HOST}" '
             for domain in louisdumas.com www.louisdumas.com louisdumas.ca www.louisdumas.ca; do
-              curl -s -X PURGE "http://127.0.0.1/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
-              curl -s -X PURGE "http://127.0.0.1/" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              curl -ks -X PURGE "http://${domain}/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              curl -ks -X PURGE "http://${domain}/" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              curl -ks -X PURGE "https://${domain}/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              curl -ks -X PURGE "https://${domain}/" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              if [ -S /tmp/siteground-cache.sock ]; then
+                curl -ks --unix-socket /tmp/siteground-cache.sock -X PURGE "http://${domain}/(.*)" >/dev/null 2>&1 || true
+              fi
             done
           '

@@ -624,17 +624,18 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                   <a
                     href={modalBrochure.pdfUrl}
                     download={modalBrochure.pdfFileName}
-                    className="hidden sm:inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full border border-[#FBFAF5]/20 hover:border-[#B48B44] text-xs uppercase tracking-wider text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 sm:px-3.5 py-1.5 rounded-full border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[0.68rem] sm:text-xs uppercase tracking-wider text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
                   >
                     <Download className="w-3.5 h-3.5" />
-                    <span>{i18n.downloadPdf}</span>
+                    <span className="hidden sm:inline">{i18n.downloadPdf}</span>
+                    <span className="sm:hidden">PDF</span>
                   </a>
 
                   {/* Register CTA inside Header */}
                   <button
                     type="button"
                     onClick={() => handleRegister(activeModalEvent)}
-                    className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-full bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
+                    className="inline-flex items-center gap-1.5 px-3.5 sm:px-4 py-1.5 rounded-full bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-[0.68rem] sm:text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
                   >
                     <span>{i18n.registerButton}</span>
                     <span>→</span>
@@ -656,12 +657,12 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
               <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
                 {/* Left Column: Interactive 3-Slide Poster Visual Carousel */}
                 <div
-                  className="lg:col-span-6 h-full bg-[#071018] p-4 sm:p-6 flex flex-col items-center justify-between border-b lg:border-b-0 lg:border-r border-[#FBFAF5]/10 select-none overflow-hidden"
+                  className="lg:col-span-6 lg:h-full bg-[#071018] p-4 sm:p-6 flex flex-col items-center justify-between border-b lg:border-b-0 lg:border-r border-[#FBFAF5]/10 select-none lg:overflow-hidden"
                   onTouchStart={handleModalTouchStart}
                   onTouchEnd={handleModalTouchEnd}
                 >
                   {/* Main Poster Frame with Prev/Next Controls — locked aspect & height */}
-                  <div className="relative w-full flex-1 min-h-0 flex items-center justify-center py-1">
+                  <div className="relative w-full lg:flex-1 lg:min-h-0 flex items-center justify-center py-1">
                     {/* Prev Slide Button */}
                     <button
                       type="button"
@@ -677,7 +678,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                     </button>
 
                     {/* Fixed-size Poster Viewport with stacked preloaded slides so dimensions never shift */}
-                    <div className="relative h-[420px] sm:h-[510px] aspect-[1080/1350] rounded-lg overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.65)] bg-[#2A0B12] shrink-0">
+                    <div className="relative h-[360px] sm:h-[460px] lg:h-[510px] aspect-[1080/1350] rounded-lg overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.65)] bg-[#2A0B12] shrink-0">
                       {modalSlides.map((slide, idx) => (
                         <img
                           key={slide.imageUrl}
@@ -713,7 +714,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                           key={slide.page}
                           type="button"
                           onClick={() => setActiveSlideIndex(idx)}
-                          className={`px-3 py-1 rounded-full text-[0.65rem] font-mono uppercase tracking-wider transition-all cursor-pointer ${
+                          className={`px-2.5 sm:px-3 py-1 rounded-full text-[0.62rem] sm:text-[0.65rem] font-mono uppercase tracking-wider transition-all cursor-pointer ${
                             activeSlideIndex === idx
                               ? 'bg-[#B48B44] text-[#0C1B26] font-semibold shadow-sm'
                               : 'bg-[#FBFAF5]/5 text-[#FBFAF5]/65 hover:bg-[#FBFAF5]/15 hover:text-[#FBFAF5]'
@@ -737,7 +738,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                 </div>
 
                 {/* Right Column: Synchronized Readable Content & Event Registration (Locked height) */}
-                <div className="lg:col-span-6 h-full p-6 sm:p-7 flex flex-col justify-between bg-gradient-to-b from-[#0F2231] to-[#0B1822] overflow-hidden">
+                <div className="lg:col-span-6 lg:h-full p-5 sm:p-7 flex flex-col justify-between bg-gradient-to-b from-[#0F2231] to-[#0B1822] lg:overflow-hidden">
                   {/* Pinned Top: Slide Selector Tabs */}
                   <div className="flex items-center border-b border-[#FBFAF5]/10 pb-3 mb-4 gap-2 overflow-x-auto shrink-0">
                     {modalSlides.map((slide, idx) => {
