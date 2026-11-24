@@ -27,17 +27,20 @@ jobs:
         run: npm run build
 
       - name: Deploy dist/ to SiteGround via SSH
-        if: ${{ env.SG_HOST != '' && env.SG_USER != '' && env.SG_SSH_KEY != '' && env.SG_PATH != '' }}
         env:
           SG_HOST: ${{ secrets.SG_HOST }}
           SG_USER: ${{ secrets.SG_USER }}
           SG_SSH_KEY: ${{ secrets.SG_SSH_KEY }}
           SG_PATH: ${{ secrets.SG_PATH }}
         run: |
+          if [ -z "$SG_HOST" ] || [ -z "$SG_USER" ] || [ -z "$SG_SSH_KEY" ] || [ -z "$SG_PATH" ]; then
+            echo "SiteGround secrets are not fully configured yet. Skipping SSH deploy."
+            exit 1
+          fi
           mkdir -p ~/.ssh
-          echo "$SG_SSH_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SG_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -p 18765 -H "$SG_HOST" >> ~/.ssh/known_hosts 2>/dev/null
+          TARGET_PATH="${SG_PATH%/}/"
           rsync -avz --delete \
-            -e "ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no" \
-            dist/ "${SG_USER}@${SG_HOST}:${SG_PATH}"
+            -e "ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
+            dist/ "${SG_USER}@${SG_HOST}:${TARGET_PATH}"
