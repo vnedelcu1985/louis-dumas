@@ -25,16 +25,21 @@ jobs:
 
       - name: Build production bundle
         run: |
+          rm -rf dist
           npm run build
-          # Keep backwards-compatible copies for any cached HTML referencing index-CUtWghPl
+          # Keep backwards-compatible copies for any recently cached HTML referencing previous hashes
           JS_FILE=$(ls dist/assets/index-*.js | head -n 1)
           CSS_FILE=$(ls dist/assets/index-*.css | head -n 1)
-          if [ -n "$JS_FILE" ] && [ "$JS_FILE" != "dist/assets/index-CUtWghPl.js" ]; then
-            cp "$JS_FILE" dist/assets/index-CUtWghPl.js
-          fi
-          if [ -n "$CSS_FILE" ] && [ "$CSS_FILE" != "dist/assets/index-DAPCCZgl.css" ]; then
-            cp "$CSS_FILE" dist/assets/index-DAPCCZgl.css
-          fi
+          for h in index-CUtWghPl.js index-CdzlZzyx.js index-BgkBzKTE.js; do
+            if [ -n "$JS_FILE" ] && [ "$JS_FILE" != "dist/assets/$h" ]; then
+              cp "$JS_FILE" "dist/assets/$h"
+            fi
+          done
+          for c in index-DAPCCZgl.css index-Cn7MURdL.css index-BPtYGBU1.css; do
+            if [ -n "$CSS_FILE" ] && [ "$CSS_FILE" != "dist/assets/$c" ]; then
+              cp "$CSS_FILE" "dist/assets/$c"
+            fi
+          done
 
       - name: Deploy dist/ to SiteGround via SSH
         env:

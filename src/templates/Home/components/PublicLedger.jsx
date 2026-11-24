@@ -5,7 +5,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Download,
-  ExternalLink,
   FileText,
   X,
 } from 'lucide-react';
@@ -72,9 +71,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
       : null;
 
   const modalPdfBrochure = getCohortPdfBrochure(activeModalEvent);
-  const modalTextSlides = siteBrochureText.slides || [];
   const modalImageSlides = modalPdfBrochure.slides || [];
-  const currentTextSlide = modalTextSlides[activeSlideIndex] || modalTextSlides[0];
 
   const openPosterModal = (event, initialSlide = 0) => {
     setActiveModalEventId(event.id);
@@ -111,9 +108,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
       if (e.key === 'Escape') {
         closePosterModal();
       } else if (e.key === 'ArrowRight') {
-        setActiveSlideIndex((prev) => (prev + 1) % modalTextSlides.length);
+        setActiveSlideIndex((prev) => (prev + 1) % modalImageSlides.length);
       } else if (e.key === 'ArrowLeft') {
-        setActiveSlideIndex((prev) => (prev - 1 + modalTextSlides.length) % modalTextSlides.length);
+        setActiveSlideIndex((prev) => (prev - 1 + modalImageSlides.length) % modalImageSlides.length);
       }
     };
 
@@ -122,7 +119,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
       document.body.style.overflow = originalOverflow;
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeModalEvent, modalTextSlides.length]);
+  }, [activeModalEvent, modalImageSlides.length]);
 
   const handleModalTouchStart = (e) => {
     if (e.touches && e.touches.length > 0) {
@@ -134,9 +131,9 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
     if (touchStartX.current === null || !e.changedTouches || e.changedTouches.length === 0) return;
     const diff = touchStartX.current - e.changedTouches[0].clientX;
     if (diff > 40) {
-      setActiveSlideIndex((prev) => (prev + 1) % modalTextSlides.length);
+      setActiveSlideIndex((prev) => (prev + 1) % modalImageSlides.length);
     } else if (diff < -40) {
-      setActiveSlideIndex((prev) => (prev - 1 + modalTextSlides.length) % modalTextSlides.length);
+      setActiveSlideIndex((prev) => (prev - 1 + modalImageSlides.length) % modalImageSlides.length);
     }
     touchStartX.current = null;
   };
@@ -540,49 +537,43 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
         </FadeInSection>
       </div>
 
-      {/* Interactive Poster & Content Carousel Modal */}
+      {/* Interactive Poster Carousel Modal — Clean Image View + Top Buttons + Side Arrows Only */}
       {activeModalEvent &&
         typeof document !== 'undefined' &&
         createPortal(
           <div
-            className="fixed inset-0 z-[100] bg-[#060E14]/90 backdrop-blur-md flex items-center justify-center p-3 sm:p-5 md:p-8 overflow-y-auto"
+            className="fixed inset-0 z-[100] bg-[#060E14]/92 backdrop-blur-md flex items-center justify-center p-3 sm:p-6"
             onClick={closePosterModal}
             role="dialog"
             aria-modal="true"
             aria-label={activeModalEvent.title}
           >
             <div
-              className="relative w-full max-w-6xl bg-gradient-to-b from-[#0F2231] to-[#0A1620] border border-[#B48B44]/40 rounded-sm shadow-[0_30px_90px_rgba(0,0,0,0.75)] text-[#FBFAF5] overflow-hidden my-auto lg:h-[720px] max-h-[92vh] flex flex-col"
+              className="relative w-full max-w-2xl bg-gradient-to-b from-[#0F2231] to-[#0A1620] border border-[#B48B44]/40 rounded-sm shadow-[0_30px_90px_rgba(0,0,0,0.8)] text-[#FBFAF5] overflow-hidden flex flex-col max-h-[95vh]"
               onClick={(e) => e.stopPropagation()}
             >
-              {/* Modal Top Header Bar (Text & Buttons match website language & rounded-sm styling) */}
-              <div className="flex flex-wrap items-center justify-between gap-3 px-5 sm:px-7 py-4 border-b border-[#FBFAF5]/10 bg-[#0A1620]/90 shrink-0">
-                <div className="min-w-0">
-                  <div className="text-[0.62rem] tracking-[0.28em] uppercase text-[#B48B44] font-mono">
-                    {siteBrochureText.eyebrow} · {siteBrochureText.subEyebrow}
-                  </div>
-                  <h4 className="text-base sm:text-lg font-serif text-[#FBFAF5] truncate">
-                    {activeModalEvent.title}
-                  </h4>
-                </div>
+              {/* Modal Top Header Bar: Title + Download PDF + Register + Close */}
+              <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-[#FBFAF5]/10 bg-[#0A1620]/95 shrink-0">
+                <h4 className="text-sm sm:text-base md:text-lg font-serif text-[#FBFAF5] truncate max-w-full sm:max-w-[45%]">
+                  {activeModalEvent.title}
+                </h4>
 
-                <div className="flex items-center gap-2.5">
-                  {/* Download PDF button (Downloads English PDF for English Cohort, French PDF for French Cohort) */}
+                <div className="flex items-center gap-2 sm:gap-2.5 ml-auto">
+                  {/* Download PDF button (English PDF for English Cohort, French PDF for French Cohort) */}
                   <a
                     href={modalPdfBrochure.pdfUrl}
                     download={modalPdfBrochure.pdfFileName}
-                    className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm border border-[#FBFAF5]/20 hover:border-[#B48B44] text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-sm border border-[#FBFAF5]/25 hover:border-[#B48B44] text-[0.68rem] sm:text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
                   >
-                    <Download className="w-3.5 h-3.5" />
-                    <span className="hidden sm:inline">{i18n.downloadPdf}</span>
-                    <span className="sm:hidden">PDF</span>
+                    <Download className="w-3.5 h-3.5 shrink-0" />
+                    <span>{i18n.downloadPdf}</span>
                   </a>
 
                   {/* Register CTA inside Header */}
                   <button
                     type="button"
                     onClick={() => handleRegister(activeModalEvent)}
-                    className="group/btn inline-flex items-center gap-1.5 px-4 py-1.5 rounded-sm bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
+                    className="group/btn inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-sm bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-[0.68rem] sm:text-xs uppercase tracking-widest font-medium transition-colors cursor-pointer shadow-sm"
                   >
                     <span>{i18n.registerButton}</span>
                     <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">→</span>
@@ -592,7 +583,7 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                   <button
                     type="button"
                     onClick={closePosterModal}
-                    className="w-8 h-8 rounded-sm border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[#FBFAF5]/70 hover:text-[#FBFAF5] flex items-center justify-center transition-colors cursor-pointer"
+                    className="w-8 h-8 rounded-sm border border-[#FBFAF5]/20 hover:border-[#B48B44] text-[#FBFAF5]/70 hover:text-[#FBFAF5] flex items-center justify-center transition-colors cursor-pointer shrink-0"
                     aria-label={i18n.closeModal}
                   >
                     <X className="w-4 h-4" />
@@ -600,250 +591,53 @@ export default function PublicLedger({ lang = 'en', onRegisterEvent }) {
                 </div>
               </div>
 
-              {/* Modal Body: Split Left Cohort Poster Carousel + Right Website-Language Readable Content */}
-              <div className="grid grid-cols-1 lg:grid-cols-12 flex-1 min-h-0 overflow-y-auto lg:overflow-hidden">
-                {/* Left Column: Interactive 3-Slide Poster Visual Carousel (Cohort-matched PDF slides) */}
-                <div
-                  className="lg:col-span-6 lg:h-full bg-[#071018] p-4 sm:p-6 flex flex-col items-center justify-between border-b lg:border-b-0 lg:border-r border-[#FBFAF5]/10 select-none lg:overflow-hidden"
-                  onTouchStart={handleModalTouchStart}
-                  onTouchEnd={handleModalTouchEnd}
+              {/* Main Poster View with Sideways Navigation Buttons Only */}
+              <div
+                className="relative bg-[#071018] p-3 sm:p-6 flex items-center justify-center select-none flex-1 min-h-0"
+                onTouchStart={handleModalTouchStart}
+                onTouchEnd={handleModalTouchEnd}
+              >
+                {/* Left Sideways Button */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveSlideIndex(
+                      (prev) => (prev - 1 + modalImageSlides.length) % modalImageSlides.length
+                    )
+                  }
+                  className="absolute left-2 sm:left-4 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0C1B26]/90 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/30 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-xl"
+                  aria-label="Previous page"
                 >
-                  {/* Main Poster Frame with Prev/Next Controls — locked aspect & height */}
-                  <div className="relative w-full lg:flex-1 lg:min-h-0 flex items-center justify-center py-1">
-                    {/* Prev Slide Button */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveSlideIndex(
-                          (prev) => (prev - 1 + modalImageSlides.length) % modalImageSlides.length
-                        )
-                      }
-                      className="absolute left-1 sm:left-2 z-10 w-10 h-10 rounded-full bg-[#0C1B26]/85 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/25 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-lg"
-                      aria-label="Previous page"
-                    >
-                      <ChevronLeft className="w-5 h-5" />
-                    </button>
+                  <ChevronLeft className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
 
-                    {/* Fixed-size Poster Viewport with stacked preloaded cohort slides */}
-                    <div className="relative h-[360px] sm:h-[460px] lg:h-[510px] aspect-[1080/1350] rounded-sm overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.65)] bg-[#2A0B12] shrink-0">
-                      {modalImageSlides.map((slide, idx) => (
-                        <img
-                          key={slide.imageUrl}
-                          src={slide.imageUrl}
-                          alt={`${activeModalEvent.title} — ${slide.pillar}`}
-                          className={`absolute inset-0 w-full h-full object-cover transition-opacity duration-300 ${
-                            activeSlideIndex === idx
-                              ? 'opacity-100 z-[2]'
-                              : 'opacity-0 z-[1] pointer-events-none'
-                          }`}
-                        />
-                      ))}
-                    </div>
-
-                    {/* Next Slide Button */}
-                    <button
-                      type="button"
-                      onClick={() =>
-                        setActiveSlideIndex((prev) => (prev + 1) % modalImageSlides.length)
-                      }
-                      className="absolute right-1 sm:right-2 z-10 w-10 h-10 rounded-full bg-[#0C1B26]/85 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/25 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-lg"
-                      aria-label="Next page"
-                    >
-                      <ChevronRight className="w-5 h-5" />
-                    </button>
-                  </div>
-
-                  {/* Poster Carousel Footer: Website-Language Page Buttons + Open Full PDF in New Tab */}
-                  <div className="w-full pt-3 mt-2 border-t border-[#FBFAF5]/10 flex flex-wrap items-center justify-between gap-2 shrink-0">
-                    <div className="flex items-center gap-1.5">
-                      {modalTextSlides.map((slide, idx) => (
-                        <button
-                          key={slide.page}
-                          type="button"
-                          onClick={() => setActiveSlideIndex(idx)}
-                          className={`px-2.5 sm:px-3 py-1 rounded-sm text-[0.62rem] sm:text-[0.65rem] font-mono uppercase tracking-wider transition-all cursor-pointer ${
-                            activeSlideIndex === idx
-                              ? 'bg-[#B48B44] text-[#0C1B26] font-semibold shadow-sm'
-                              : 'bg-[#FBFAF5]/5 text-[#FBFAF5]/65 border border-[#FBFAF5]/15 hover:border-[#B48B44] hover:text-[#FBFAF5]'
-                          }`}
-                        >
-                          {slide.numeral} · {slide.pillar}
-                        </button>
-                      ))}
-                    </div>
-
-                    <a
-                      href={modalPdfBrochure.pdfUrl}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1 text-[0.68rem] font-mono uppercase tracking-wider text-[#B48B44] hover:text-[#FBFAF5] transition-colors"
-                    >
-                      <span>{i18n.openPdf}</span>
-                      <ExternalLink className="w-3 h-3" />
-                    </a>
-                  </div>
+                {/* Fixed-Size Poster Image Frame (All 3 pages preloaded & stacked so size never changes) */}
+                <div className="relative w-full max-w-[520px] max-h-[78vh] aspect-[1080/1350] rounded-sm overflow-hidden border border-[#B48B44]/35 shadow-[0_20px_50px_rgba(0,0,0,0.7)] bg-[#2A0B12] mx-auto">
+                  {modalImageSlides.map((slide, idx) => (
+                    <img
+                      key={slide.imageUrl}
+                      src={slide.imageUrl}
+                      alt={`${activeModalEvent.title} — ${idx + 1}`}
+                      className={`absolute inset-0 w-full h-full object-contain transition-opacity duration-300 ${
+                        activeSlideIndex === idx
+                          ? 'opacity-100 z-[2]'
+                          : 'opacity-0 z-[1] pointer-events-none'
+                      }`}
+                    />
+                  ))}
                 </div>
 
-                {/* Right Column: Synchronized Readable Content & Event Registration (Matches Website Language & Styling) */}
-                <div className="lg:col-span-6 lg:h-full p-5 sm:p-7 flex flex-col justify-between bg-gradient-to-b from-[#0F2231] to-[#0B1822] lg:overflow-hidden">
-                  {/* Pinned Top: Slide Selector Tabs */}
-                  <div className="flex items-center border-b border-[#FBFAF5]/10 pb-3 mb-4 gap-2 overflow-x-auto shrink-0">
-                    {modalTextSlides.map((slide, idx) => {
-                      const isActive = activeSlideIndex === idx;
-                      return (
-                        <button
-                          key={slide.page}
-                          type="button"
-                          onClick={() => setActiveSlideIndex(idx)}
-                          className={`flex items-center gap-2 px-3.5 py-1.5 rounded-sm text-xs uppercase tracking-widest font-mono transition-all cursor-pointer shrink-0 ${
-                            isActive
-                              ? 'bg-[#9D2933]/35 border border-[#B48B44] text-[#FBFAF5]'
-                              : 'text-[#FBFAF5]/50 hover:text-[#FBFAF5] hover:bg-[#FBFAF5]/5 border border-[#FBFAF5]/10'
-                          }`}
-                        >
-                          <span className="text-[#B48B44]">{slide.numeral}</span>
-                          <span>{slide.pillar}</span>
-                        </button>
-                      );
-                    })}
-                  </div>
-
-                  {/* Fixed-Height Middle Content Region so switching slides never resizes the modal */}
-                  <div className="h-[340px] sm:h-[360px] lg:h-auto lg:flex-1 min-h-0 overflow-y-auto pr-1 [scrollbar-width:thin] [scrollbar-color:rgba(180,139,68,0.35)_transparent]">
-                    {currentTextSlide && (
-                      <div className="space-y-3.5">
-                        <div className="flex items-center justify-between gap-2">
-                          <div className="inline-flex items-center gap-2 text-xs font-mono uppercase tracking-[0.25em] text-[#B48B44]">
-                            <span>
-                              {i18n.pageLabel} {currentTextSlide.numeral} / 03
-                            </span>
-                            <span>—</span>
-                            <span>{currentTextSlide.pillar}</span>
-                          </div>
-                          {currentTextSlide.kicker && (
-                            <span className="text-[0.65rem] font-mono uppercase tracking-[0.22em] text-[#FBFAF5]/55">
-                              {currentTextSlide.kicker}
-                            </span>
-                          )}
-                        </div>
-
-                        <h3 className="text-2xl sm:text-3xl font-serif text-[#FBFAF5] leading-tight">
-                          {currentTextSlide.headline}
-                        </h3>
-
-                        {currentTextSlide.subhead && (
-                          <div className="pl-3.5 border-l-2 border-[#B48B44] text-sm sm:text-base text-[#FBFAF5]/90 font-normal leading-snug">
-                            {currentTextSlide.subhead}
-                          </div>
-                        )}
-
-                        {currentTextSlide.quote && (
-                          <blockquote className="pl-3.5 border-l-2 border-[#B48B44] text-base sm:text-lg font-serif italic text-[#B48B44] leading-snug">
-                            {currentTextSlide.quote}
-                          </blockquote>
-                        )}
-
-                        {currentTextSlide.body && (
-                          <p className="text-sm sm:text-base text-[#FBFAF5]/80 font-light leading-relaxed">
-                            {currentTextSlide.body}
-                          </p>
-                        )}
-
-                        {/* Slide 2 Numbered Steps */}
-                        {currentTextSlide.steps && (
-                          <div className="space-y-2.5 pt-1">
-                            {currentTextSlide.steps.map((step) => (
-                              <div
-                                key={step.number}
-                                className="flex items-start gap-3.5 p-3 rounded-sm bg-[#0A1620]/70 border border-[#FBFAF5]/10"
-                              >
-                                <span className="text-xs font-mono font-semibold text-[#B48B44] mt-0.5">
-                                  {step.number}
-                                </span>
-                                <p className="text-sm text-[#FBFAF5]/90 font-light leading-relaxed">
-                                  {step.text}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-
-                        {/* Slide 3 Sections (Why Louis / In The Room / Who It's For) */}
-                        {currentTextSlide.sections && (
-                          <div className="space-y-2.5 pt-1">
-                            {currentTextSlide.sections.map((sec) => (
-                              <div
-                                key={sec.label}
-                                className="p-2.5 sm:p-3 rounded-sm bg-[#0A1620]/70 border border-[#FBFAF5]/10"
-                              >
-                                <div className="text-[0.62rem] font-mono uppercase tracking-[0.22em] text-[#B48B44] mb-0.5">
-                                  {sec.label}
-                                </div>
-                                <p className="text-xs sm:text-sm text-[#FBFAF5]/85 font-light leading-relaxed">
-                                  {sec.text}
-                                </p>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  {/* Pinned Bottom: Event Cohort Summary + Website-Consistent Register & Download CTAs */}
-                  <div className="pt-4 mt-4 border-t border-[#FBFAF5]/10 shrink-0 space-y-4">
-                    <div className="p-3.5 rounded-sm bg-[#0A1620]/90 border border-[#FBFAF5]/10 border-l-2 border-l-[#9D2933]">
-                      <div className="grid grid-cols-3 gap-3 text-xs">
-                        <div>
-                          <span className="block text-[0.58rem] font-mono uppercase tracking-widest text-[#FBFAF5]/45">
-                            {i18n.whenLabel}
-                          </span>
-                          <span className="font-medium text-[#FBFAF5]">
-                            {activeModalEvent.dateDisplay}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-[0.58rem] font-mono uppercase tracking-widest text-[#FBFAF5]/45">
-                            {i18n.whereLabel}
-                          </span>
-                          <span className="font-medium text-[#FBFAF5]">
-                            {siteBrochureText.venue}
-                          </span>
-                        </div>
-                        <div>
-                          <span className="block text-[0.58rem] font-mono uppercase tracking-widest text-[#FBFAF5]/45">
-                            {i18n.seatsLabel}
-                          </span>
-                          <span className="font-medium text-[#FBFAF5]">
-                            {siteBrochureText.seatsDetail}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap items-center justify-between gap-3">
-                      <button
-                        type="button"
-                        onClick={() => handleRegister(activeModalEvent)}
-                        className="group/btn inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-sm bg-[#B48B44] hover:bg-[#FBFAF5] text-[#0C1B26] text-xs uppercase tracking-widest font-medium transition-all duration-300 cursor-pointer shadow-md"
-                      >
-                        <span>{i18n.registerForEvent}</span>
-                        <span className="transition-transform duration-300 group-hover/btn:translate-x-0.5">
-                          →
-                        </span>
-                      </button>
-
-                      <a
-                        href={modalPdfBrochure.pdfUrl}
-                        download={modalPdfBrochure.pdfFileName}
-                        className="inline-flex items-center gap-2 px-4 py-2.5 rounded-sm border border-[#FBFAF5]/25 hover:border-[#B48B44] text-xs uppercase tracking-widest text-[#FBFAF5]/90 hover:text-[#B48B44] transition-colors"
-                      >
-                        <Download className="w-3.5 h-3.5" />
-                        <span>{i18n.downloadPdf}</span>
-                      </a>
-                    </div>
-                  </div>
-                </div>
+                {/* Right Sideways Button */}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setActiveSlideIndex((prev) => (prev + 1) % modalImageSlides.length)
+                  }
+                  className="absolute right-2 sm:right-4 z-10 w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-[#0C1B26]/90 hover:bg-[#B48B44] text-[#FBFAF5] hover:text-[#0C1B26] border border-[#FBFAF5]/30 hover:border-[#B48B44] flex items-center justify-center transition-all cursor-pointer shadow-xl"
+                  aria-label="Next page"
+                >
+                  <ChevronRight className="w-5 h-5 sm:w-6 sm:h-6" />
+                </button>
               </div>
             </div>
           </div>,
