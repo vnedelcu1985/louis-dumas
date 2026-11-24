@@ -1,0 +1,19 @@
+# Apache configuration for SiteGround hosting
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # 1. Allow direct execution/access to real files and directories (like contact.php, assets, images)
+  RewriteCond %{REQUEST_FILENAME} -f [OR]
+  RewriteCond %{REQUEST_FILENAME} -d
+  RewriteRule ^ - [L]
+
+  # 2. Route all other requests to index.html for Single Page Application
+  RewriteRule ^ index.html [L]
+</IfModule>
+
+# Security: Disable directory browsing
+Options -Indexes
+
+# UTF-8 encoding
+AddDefaultCharset UTF-8
