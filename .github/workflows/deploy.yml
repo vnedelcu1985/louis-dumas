@@ -24,7 +24,17 @@ jobs:
         run: npm ci
 
       - name: Build production bundle
-        run: npm run build
+        run: |
+          npm run build
+          # Also keep backwards-compatible copies for any cached HTML referencing index-CUtWghPl
+          JS_FILE=$(ls dist/assets/index-*.js | head -n 1)
+          CSS_FILE=$(ls dist/assets/index-*.css | head -n 1)
+          if [ -n "$JS_FILE" ] && [ "$JS_FILE" != "dist/assets/index-CUtWghPl.js" ]; then
+            cp "$JS_FILE" dist/assets/index-CUtWghPl.js
+          fi
+          if [ -n "$CSS_FILE" ] && [ "$CSS_FILE" != "dist/assets/index-DAPCCZgl.css" ]; then
+            cp "$CSS_FILE" dist/assets/index-DAPCCZgl.css
+          fi
 
       - name: Deploy dist/ to SiteGround via SSH
         env:
@@ -41,6 +51,13 @@ jobs:
           printf '%s\n' "$SG_SSH_KEY" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
           TARGET_PATH="${SG_PATH%/}/"
-          rsync -avz --delete \
+          rsync -avz \
             -e "ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             dist/ "${SG_USER}@${SG_HOST}:${TARGET_PATH}"
+          # Flush SiteGround NGINX Dynamic Cache automatically
+          ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SG_USER}@${SG_HOST}" '
+            for domain in louisdumas.com www.louisdumas.com louisdumas.ca www.louisdumas.ca; do
+              curl -s -X PURGE "http://127.0.0.1/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
+              curl -s -X PURGE "http://127.0.0.1/" -H "Host: ${domain}" >/dev/null 2>&1 || true
+            done
+          '

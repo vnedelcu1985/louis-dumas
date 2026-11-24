@@ -3,13 +3,22 @@
   RewriteEngine On
   RewriteBase /
 
-  # 1. Allow direct execution/access to real files and directories (like contact.php, assets, images)
+  # 1. Allow direct execution/access to real files and directories (like contact.php, assets, images, documents)
   RewriteCond %{REQUEST_FILENAME} -f [OR]
   RewriteCond %{REQUEST_FILENAME} -d
   RewriteRule ^ - [L]
 
   # 2. Route all other requests to index.html for Single Page Application
   RewriteRule ^ index.html [L]
+</IfModule>
+
+# Prevent SiteGround Dynamic Cache & browsers from caching stale index.html
+<IfModule mod_headers.c>
+  <FilesMatch "\.(html|htm)$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate, max-age=0"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
 </IfModule>
 
 # Security: Disable directory browsing
