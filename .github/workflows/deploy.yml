@@ -54,15 +54,27 @@ jobs:
           rsync -avz \
             -e "ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null" \
             dist/ "${SG_USER}@${SG_HOST}:${TARGET_PATH}"
-          # Flush SiteGround NGINX Dynamic Cache automatically from inside the server
+          # Flush SiteGround Dynamic Cache via official Site Tools Unix socket (/chroot/tmp/site-tools.sock)
           ssh -i ~/.ssh/id_ed25519 -p 18765 -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null "${SG_USER}@${SG_HOST}" '
-            for domain in louisdumas.com www.louisdumas.com louisdumas.ca www.louisdumas.ca; do
-              curl -ks -X PURGE "http://${domain}/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
-              curl -ks -X PURGE "http://${domain}/" -H "Host: ${domain}" >/dev/null 2>&1 || true
-              curl -ks -X PURGE "https://${domain}/(.*)" -H "Host: ${domain}" >/dev/null 2>&1 || true
-              curl -ks -X PURGE "https://${domain}/" -H "Host: ${domain}" >/dev/null 2>&1 || true
-              if [ -S /tmp/siteground-cache.sock ]; then
-                curl -ks --unix-socket /tmp/siteground-cache.sock -X PURGE "http://${domain}/(.*)" >/dev/null 2>&1 || true
-              fi
-            done
+            php -r '\''
+              foreach (["/chroot/tmp/site-tools.sock", "/tmp/site-tools.sock"] as $sock) {
+                if (file_exists($sock)) {
+                  foreach (["louisdumas.com", "louisdumas.ca"] as $domain) {
+                    $fp = @stream_socket_client("unix://" . $sock, $errno, $errstr, 5);
+                    if ($fp) {
+                      $req = [
+                        "api" => "domain-all",
+                        "cmd" => "update",
+                        "params" => ["flush_cache" => "1", "id" => $domain, "path" => "/(.*)"],
+                        "settings" => ["json" => 1]
+                      ];
+                      fwrite($fp, json_encode($req, JSON_FORCE_OBJECT) . "\n");
+                      $res = fgets($fp, 32768);
+                      echo "Flushed $domain via $sock: $res\n";
+                      fclose($fp);
+                    }
+                  }
+                }
+              }
+            '\'' || true
           '
